@@ -1,0 +1,1494 @@
+import React, { Component } from "react";
+import API from "../../shared/axios";
+//import whitelogo from '../../assets/images/drreddylogo_white.png';
+import loaderlogo from "../../assets/images/Xceed_Logo-animated.gif";
+import customersIcon from "../../assets/images/my-customer-icon.svg";
+import keyAccoutIcon from "../../assets/images/key-accounts-icon.svg";
+import taskIcon from "../../assets/images/my-tasks-icon.svg";
+import totalTaskImage from "../../assets/images/totaltask-icon.svg";
+import potentialAlertImage from "../../assets/images/potential-alert-icon.svg";
+import potentialNotificationImage from "../../assets/images/potential-notification-icon.svg";
+import { Bar, Doughnut } from "react-chartjs-2";
+import { Chart } from "react-google-charts";
+import { Tooltip, OverlayTrigger } from "react-bootstrap";
+import { Link } from "react-router-dom";
+
+import MyCompanyPopup from "./MyCompanyPopup";
+
+function LinkWithTooltip({ id, children, href, tooltip, clicked }) {
+  return (
+    <OverlayTrigger
+      overlay={<Tooltip id={id}>{tooltip}</Tooltip>}
+      placement="left"
+      delayShow={300}
+      delayHide={150}
+      trigger={["hover"]}
+      style={{
+        backgroundColor: "rgba(0, 0, 0, 0.85)",
+        padding: "2px 10px",
+        color: "white",
+        borderRadius: 3,
+      }}
+    >
+      <Link to={href} onClick={clicked}>
+        {children}
+      </Link>
+    </OverlayTrigger>
+  );
+}
+
+class AnalyticsModule extends Component {
+  state = {
+    custTiles: {},
+    taskTiles: {},
+    showCompanyPopup: false,
+    emp_task_distribution_google: [],
+    reqTypeTaskDistribution_google: [],
+    show_data: false,
+    met_sla: "",
+    missed_sla: "",
+    distribution_total: 0,
+    distribution_open: 0,
+    distribution_close: 0,
+    distribution_breach: 0,
+  };
+
+  checkHandler = (event) => {
+    event.preventDefault();
+  };
+
+  componentDidMount = () => {
+    API.get(`/api/reports/team_analytics/open_tasks?${this.props.queryString}`)
+      .then((res) => {
+        //console.log('open_tasks',res.data.open);
+        this.setState({
+          open_google: res.data.open,
+          openTotalTasks: res.data.openTotalTasks,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+
+    API.get(
+      `/api/reports/team_analytics/allocated_tasks?${this.props.queryString}`
+    )
+      .then((res) => {
+        //console.log('allocated_tasks',res.data.data);
+        this.setState({
+          assign_google: res.data.assign,
+          assignTotalTasks: res.data.assignTotalTasks,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+
+    API.get(
+      `/api/reports/team_analytics/closed_tasks?${this.props.queryString}`
+    )
+      .then((res) => {
+        //console.log('closed_tasks',res.data.data);
+        this.setState({
+          close_google: res.data.close,
+          closeTotalTasks: res.data.closeTotalTasks,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+
+    API.get(
+      `/api/reports/team_analytics/task_overdue_analysis?${this.props.queryString}`
+    )
+      .then((res) => {
+        //console.log('task_overdue_analysis',res.data.data);
+        this.setState({
+          overdue_google: res.data.overdueAnalysis,
+          overdueTotalTasks: res.data.overdueTotalTasks,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+
+    API.get(
+      `/api/reports/team_analytics/sla_met_analysis?${this.props.queryString}`
+    )
+      .then((res) => {
+        //console.log('sla_met_analysis',res.data.data);
+        this.setState({
+          met_google: res.data.metAnalysis,
+          metTotalTasks: res.data.metTotalTasks,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+
+    // API.get(
+    //   `/api/reports/team_analytics/emp_task_distribution?${this.props.queryString}`
+    // )
+    // .then((res) => {
+    //   //console.log('sla_met_analysis',res.data.data);
+    //   this.setState({
+    //     emp_task_distribution_google: res.data.emp_task_distribution_google
+    //   });
+    // })
+    // .catch((err) => {
+    //   console.log(err);
+    // });  
+
+    API.get(
+      `/api/reports/team_analytics/task_req_distribution?${this.props.queryString}`
+    )
+    .then((res) => {
+      //console.log('sla_met_analysis',res.data.data);
+      this.setState({
+        req_task_distribution_google: res.data.req_task_distribution_google
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+    });   
+
+
+      
+
+    API.get(`/api/reports/team_analytics?${this.props.queryString}`)
+      .then((res) => {
+        this.setState({
+          custTiles: res.data.custTiles,
+          blinker: blinker,
+          taskTiles: res.data.taskTiles,
+          inactive24Hours: res.data.inactive24Hours,
+          breach24Hours: res.data.breach24Hours,
+        });
+
+        //console.log(res.data.emp_task_distribution);
+
+        //res.data.emp_task_distribution
+        //EMPLOYEE WISE TASK DISTRIBUTION
+        // if(res.data.emp_task_distribution){
+        //     var emp_task_dist_data = {
+        //         labels:res.data.emp_task_distribution[0].x_axis,
+        //         datasets:[{
+        //             label:'Opened',
+        //             width:50,
+        //             data:res.data.emp_task_distribution[0].y_opened_axis,
+        //             backgroundColor:'#fad264'
+        //         },{
+        //             label:'Allocated',
+        //             width:50,
+        //             data:res.data.emp_task_distribution[0].y_allocated_axis,
+        //             backgroundColor:'#15cda8'
+        //         },{
+        //             label:'Closed',
+        //             width:50,
+        //             data:res.data.emp_task_distribution[0].y_closed_axis,
+        //             backgroundColor:'#ff5959'
+        //         }]
+        //     }
+        // }
+
+        if (res.data.emp_task_distribution_google) {
+          this.setState({
+            emp_task_distribution_google: res.data.emp_task_distribution_google,
+          });
+        }
+
+        //DISTRIBUTION OF REQUEST TYPES
+        // var task_req_dist_data = {
+        //     labels:['Method Related Queries','Samples/Working Standards/Impurities','Typical CoA','Spec and MOA','Vendor Questionnaire','CDA/Sales Agreement','New Order Request','General Request','Request for Additional Declarations','Storage and Transport Declaration','Residual Solvents Declaration','Elemental Impurity (EI) Declaration','Complaints','Recertification of CoA','Audit/Visit Request','Customized Spec Request','Quality Agreement','Quality Equivalence Request','Stability Data','Request for DMF','Request for CEP Copy','Request for LOA','Request for LOC/LOE','Forecast','Payments','Notification'],
+        //     datasets:[{
+        //         label:'Opened',
+        //         width:50,
+        //         data:res.data.req_type_task_distribution.opened,
+        //         backgroundColor:'#fad264'
+        //     },{
+        //         label:'Closed',
+        //         width:50,
+        //         data:res.data.req_type_task_distribution.closed,
+        //         backgroundColor:'#15cda8'
+        //     },{
+        //         label:'Breached',
+        //         width:50,
+        //         data:res.data.req_type_task_distribution.breached,
+        //         backgroundColor:'#ff5959'
+        //     }]
+        // }
+
+        if (res.data.reqTypeTaskDistribution_google) {
+          this.setState({
+            reqTypeTaskDistribution_google:res.data.reqTypeTaskDistribution_google,
+            distribution_total: res.data.google_distribution_total,
+            distribution_open: res.data.google_distribution_open,
+            distribution_close: res.data.google_distribution_close,
+            distribution_breach: res.data.google_distribution_breach,
+          });
+        }
+
+        //NUMBER OF TASKS
+        //OPEN TASKS
+        // var open_tasks = {
+        //     labels:['SLA Near Breach (>80%)','SLA Breached','Within SLA'],
+        //     datasets:[{
+        //         label:'Open Tasks',
+        //         data:res.data.noOfTasks.open,
+        //         backgroundColor:['#facf5a','#ff5959','#e8e8e8']
+        //     }]
+        // }
+
+        // if(res.data.noOfTasks.open){
+        //     this.setState({open_google:res.data.noOfTasks.open});
+        // }
+
+        //ALLOCATED TASKS
+        // var assign_tasks = {
+        //     labels:['SLA Near Breach (>80%)','SLA Breached','Within SLA'],
+        //     datasets:[{
+        //         label:'Allocated Tasks',
+        //         data:res.data.noOfTasks.assign,
+        //         backgroundColor:['#facf5a','#ff5959','#e8e8e8']
+        //     }]
+        // }
+
+        // if(res.data.noOfTasks.assign){
+        //     this.setState({assign_google:res.data.noOfTasks.assign});
+        // }
+
+        //CLOSED TASKS
+        // var close_tasks = {
+        //     labels:['SLA Met','SLA Breached'],
+        //     datasets:[{
+        //         label:'Closed Tasks',
+        //         data:res.data.noOfTasks.close,
+        //         backgroundColor:['#15cda8','#ff5959']
+        //     }]
+        // }
+
+        // if(res.data.noOfTasks.close){
+        //     this.setState({close_google:res.data.noOfTasks.close});
+        // }
+
+        //BREAKDOWN OPEN AND CLOSED TASKS
+        //TASK OVERDUE
+        // var overdue = {
+        //     labels:['Delayed By Days (1-4)','Delayed By Week (>4 days)','Delayed By Month (>22 days)'],
+        //     datasets:[{
+        //         label:'Task Overdue',
+        //         data:res.data.noOfTasks.overdueAnalysis,
+        //         backgroundColor:['#CC4747','#E65050','#802d2d']
+        //     }]
+        // }
+
+        // if(res.data.noOfTasks.overdueAnalysis){
+        //     this.setState({overdue_google:res.data.noOfTasks.overdueAnalysis});
+        // }
+
+        //MET SLA
+        // var met = {
+        //     labels:['Before 1 day','Before 2-3 days','Before 4 days'],
+        //     datasets:[{
+        //         label:'Met SLA',
+        //         data:res.data.noOfTasks.metAnalysis,
+        //         backgroundColor:['#12B392','#0E9673','#084D3F']
+        //     }]
+        // }
+
+        // if(res.data.noOfTasks.metAnalysis){
+        //     this.setState({met_google:res.data.noOfTasks.metAnalysis});
+        // }
+
+        //===========
+        this.setState({
+          //emp_task_dist:emp_task_dist_data,
+          //task_req_dist_data:task_req_dist_data,
+          //open_tasks:open_tasks,
+          //assign_tasks:assign_tasks,
+          //close_tasks:close_tasks,
+          //overdue:overdue,
+          //met:met,
+          //openTotalTasks   : res.data.noOfTasks.openTotalTasks,
+          //assignTotalTasks : res.data.noOfTasks.assignTotalTasks,
+          //closeTotalTasks  : res.data.noOfTasks.closeTotalTasks,
+          //overdueTotalTasks: res.data.noOfTasks.overdueTotalTasks,
+          //metTotalTasks    : res.data.noOfTasks.metTotalTasks,
+          show_data: true,
+        });
+
+        let met_sla,
+          missed_sla,
+          class_met_sla,
+          class_missed_sla,
+          met_num,
+          missed_num;
+
+        if (res.data.slaTiles.total_sla > 0) {
+          met_sla = Math.ceil(
+            (res.data.slaTiles.total_met_sla / res.data.slaTiles.total_sla) *
+              100
+          );
+          //missed_sla = Math.ceil((res.data.slaTiles.total_missed_sla/res.data.slaTiles.total_sla) * 100);
+          missed_sla = 100 - met_sla;
+
+          met_num = res.data.slaTiles.total_met_sla;
+          missed_num = res.data.slaTiles.total_missed_sla;
+
+          class_met_sla = met_sla;
+          class_missed_sla = missed_sla;
+        } else {
+          met_num = 0;
+          missed_num = 0;
+
+          met_sla = 0;
+          missed_sla = 0;
+          class_met_sla = 1;
+          class_missed_sla = 1;
+        }
+        this.setState({
+          met_sla: met_sla,
+          missed_sla: missed_sla,
+          met_num: met_num,
+          missed_num: missed_num,
+          class_met_sla: class_met_sla,
+          class_missed_sla: class_missed_sla,
+        });
+
+        let met_my_sla,
+          missed_my_sla,
+          class_met_my_sla,
+          class_missed_my_sla,
+          met_my_num,
+          missed_my_num;
+
+        if (res.data.slaTiles.total_my_sla > 0) {
+          met_my_sla = Math.ceil(
+            (res.data.slaTiles.total_my_met_sla /
+              res.data.slaTiles.total_my_sla) *
+              100
+          );
+          //missed_sla = Math.ceil((res.data.data.total_missed_sla/res.data.data.total_sla) * 100);
+          missed_my_sla = 100 - met_my_sla;
+
+          met_my_num = res.data.slaTiles.total_my_met_sla;
+          missed_my_num = res.data.slaTiles.total_my_missed_sla;
+
+          class_met_my_sla = met_my_sla;
+          class_missed_my_sla = missed_my_sla;
+        } else {
+          met_my_num = 0;
+          missed_my_num = 0;
+
+          met_my_sla = 0;
+          missed_my_sla = 0;
+          class_met_my_sla = 1;
+          class_missed_my_sla = 1;
+        }
+        this.setState({
+          met_my_sla: met_my_sla,
+          missed_my_sla: missed_my_sla,
+          met_my_num: met_my_num,
+          missed_my_num: missed_my_num,
+          class_met_my_sla: class_met_my_sla,
+          class_missed_my_sla: class_missed_my_sla,
+        });
+
+        const blinker =
+          this.state.custTiles.customer_new_tile > 0 ? "blinking" : "";
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  selectComapny = () => {
+    this.setState({ showCompanyPopup: true });
+  };
+
+  closePopup = () => {
+    this.setState({ showCompanyPopup: false });
+  };
+
+  render() {
+    if (this.state.isLoading) {
+      return (
+        <>
+          <div className="loderOuter">
+            <div className="loader">
+              <img src={loaderlogo} alt="logo" />
+              <div className="loading">Loading...</div>
+            </div>
+          </div>
+        </>
+      );
+    } else {
+      let prevHist = this.props.history;
+      let urlStr = this.props.queryString;
+      return (
+        <>
+          <div className="dashboard-top">
+            <div className="row">
+              {this.state.custTiles && (
+                <div className="col-lg-3 col-sm-6 col-xs-12">
+                  <div className="small-box bg-Blue clearfix">
+                    <div className="left-panel">
+                      <div
+                        className="inner clearfix"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => this.selectComapny()}
+                      >
+                        <div className="icon-panel blue">
+                          <div className="icon">
+                            <img src={customersIcon} alt="My Customers" />
+                          </div>
+                          <h3>{this.state.custTiles.company_tile}</h3>
+                        </div>
+                        {/* <Link to='/user/my_customer'> */}
+                        <span>
+                          {this.state.custTiles.company_tile === 1 && (
+                            <p>
+                              <strong>Customer</strong>
+                            </p>
+                          )}
+                          {this.state.custTiles.company_tile !== 1 && (
+                            <p>
+                              <strong>Customers</strong>
+                            </p>
+                          )}
+                        </span>
+                        {/* </Link> */}
+                      </div>
+                      <div className="footer-inner clearfix">
+                        <div className="panel-01">
+                          Open Requests{" "}
+                          <span>{this.state.custTiles.customer_open_tile}</span>
+                        </div>
+                        <div className="panel-02 col-border">
+                          New Requests{" "}
+                          <span className={this.state.blinker}>
+                            {this.state.custTiles.customer_new_tile}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="right-panel">
+                      <div className="keyAccounts">
+                        <div className="icon-panel">
+                          <div className="icon">
+                            <img src={keyAccoutIcon} alt="Key Account" />
+                          </div>
+                          <h3>{this.state.custTiles.key_customer_tile}</h3>
+                        </div>
+                        {this.state.custTiles.key_customer_tile !== 1 && (
+                          <p>
+                            <strong>Key Users</strong>
+                          </p>
+                        )}
+                        {this.state.custTiles.key_customer_tile === 1 && (
+                          <p>
+                            <strong>Key User</strong>
+                          </p>
+                        )}
+                      </div>
+                      <div className="footer-inner clearfix">
+                        <div className="panel-01 col-border">
+                          Open{" "}
+                          <span>
+                            {this.state.custTiles.key_open_customer_tile}
+                          </span>
+                        </div>
+                        <div className="panel-02 col-border">
+                          New
+                          <span className={this.state.blinker}>
+                            {this.state.custTiles.key_new_customer_tile}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* {this.state.showCompanyPopup === true && <MyCompanyPopup closePopup={this.closePopup} {...this.props} />} */}
+                </div>
+              )}
+
+              {this.state.taskTiles && this.state.taskTiles !== "" && (
+                <div className="col-lg-3 col-sm-6 col-xs-12">
+                  <div className="small-box bg-Red">
+                    <div className="inner-top">
+                      <div className="left-panel">
+                        <div className="inner">
+                          <div className="icon-panel red">
+                            <div className="icon task-icon">
+                              <img src={taskIcon} alt="My Tasks" />
+                            </div>
+                            <h3>{this.state.taskTiles.total_tasks}</h3>
+                          </div>
+                          {this.state.taskTiles.total_tasks === 1 && (
+                            <p>
+                              <strong>Task</strong>
+                            </p>
+                          )}
+                          {this.state.taskTiles.total_tasks !== 1 && (
+                            <p>
+                              <strong>Tasks</strong>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="right-panel">
+                        <div className="my-task-right-panel">
+                          <div className="task-right-top">
+                            <LinkWithTooltip
+                              tooltip={`List of all tasks assigned by CQT`}
+                              href="#"
+                              id="tooltip-1"
+                              clicked={(e) => this.checkHandler(e)}
+                            >
+                              <img src={totalTaskImage} alt="exclamation" />
+                            </LinkWithTooltip>
+                          </div>
+                          <h3>{this.state.taskTiles.cqt_tasks}</h3>
+                          <p>
+                            <strong>Total CQT Tasks</strong>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="small-box-footer clearfix">
+                      <div className="col-3 red-color">
+                        Overdue{" "}
+                        <span>{this.state.taskTiles.overdue_tasks}</span>
+                      </div>
+                      <div className="col-3 col-border">
+                        Due Today{" "}
+                        <span>{this.state.taskTiles.overdue_today}</span>
+                      </div>
+                      <div className="col-3 col-border">
+                        <div className="row">
+                          Due this Week{" "}
+                          <span>{this.state.taskTiles.overdue_week}</span>
+                        </div>
+                      </div>
+                      <LinkWithTooltip
+                        tooltip={`List of all tasks assigned in CQT.`}
+                        href="#"
+                        id="tooltip-1"
+                        clicked={(e) => this.checkHandler(e)}
+                      ></LinkWithTooltip>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {this.state.met_sla !== "" && this.state.missed_sla !== "" && (
+                <div className="col-lg-3 col-sm-6 col-xs-12">
+                  <div className="small-box bg-Green">
+                    <div className="inner clearfix">
+                      <div className="col-80">
+                        <p>
+                          <span className="roundShape green"></span>Met SLA
+                        </p>
+                        <p>
+                          <span className="roundShape red"></span>Missed SLA{" "}
+                        </p>
+                      </div>
+                      <div className="col-20">
+                        {this.state.met_sla > 0 && (
+                          <div className="progress-main">
+                            <div className="progress vertical">
+                              <div
+                                className="progress-bar progress-bar-green"
+                                role="progressbar"
+                                aria-valuenow="40"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                style={{
+                                  height: `${this.state.class_met_sla}%`,
+                                }}
+                              >
+                                {" "}
+                              </div>
+                            </div>
+                            <span className="sr-only-new">{`${this.state.met_num}`}</span>
+                          </div>
+                        )}
+
+                        {this.state.missed_sla > 0 && (
+                          <div className="progress-main">
+                            <div className="progress vertical">
+                              <div
+                                className="progress-bar progress-bar-red"
+                                role="progressbar"
+                                aria-valuenow="80"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                style={{
+                                  height: `${this.state.class_missed_sla}%`,
+                                }}
+                              >
+                                {" "}
+                              </div>
+                            </div>
+                            <span className="sr-only-new">{`${this.state.missed_num}`}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="small-box-footer clearfix">
+                      <div className="col-80">
+                        <span className="slabox">Task SLA</span>Adherence Score
+                      </div>
+                      {this.state.met_sla > 0 && (
+                        <div className="col-20">
+                          <span>{`${this.state.met_sla}%`}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {this.state.met_my_sla !== "" && this.state.missed_my_sla !== "" && (
+                <div className="col-lg-3 col-sm-6 col-xs-12">
+                  <div className="small-box bg-Green">
+                    <div className="inner clearfix">
+                      <div className="col-80">
+                        <p>
+                          <span className="roundShape green"></span>Met SLA
+                        </p>
+                        <p>
+                          <span className="roundShape red"></span>Missed SLA{" "}
+                        </p>
+                      </div>
+                      <div className="col-20">
+                        {this.state.met_my_sla > 0 && (
+                          <div className="progress-main">
+                            <div className="progress vertical">
+                              <div
+                                className="progress-bar progress-bar-green"
+                                role="progressbar"
+                                aria-valuenow="40"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                style={{
+                                  height: `${this.state.class_met_my_sla}%`,
+                                }}
+                              >
+                                {" "}
+                              </div>
+                            </div>
+                            <span className="sr-only-new">{`${this.state.met_my_num}`}</span>
+                          </div>
+                        )}
+
+                        {this.state.missed_my_sla > 0 && (
+                          <div className="progress-main">
+                            <div className="progress vertical">
+                              <div
+                                className="progress-bar progress-bar-red"
+                                role="progressbar"
+                                aria-valuenow="80"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                style={{
+                                  height: `${this.state.class_missed_my_sla}%`,
+                                }}
+                              >
+                                {" "}
+                              </div>
+                            </div>
+                            <span className="sr-only-new">{`${this.state.missed_my_num}`}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="small-box-footer clearfix">
+                      <div className="col-80">
+                        <span className="slabox">My SLA</span>Adherence Score
+                      </div>
+                      {this.state.met_my_sla > 0 && (
+                        <div className="col-20">
+                          <span>{`${this.state.met_my_sla}%`}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* {this.state.taskTiles && this.state.taskTiles !== '' && <div className="col-lg-3 col-sm-6 col-xs-12">
+                            <div className="small-box bg-Red">
+                                <div className="inner">                   
+                                    <div className="icon-panel">
+                                        <div className="icon task-icon"><img src={taskIcon} alt="My Tasks" /></div>
+                                        <h3>{this.state.taskTiles.total_tasks}</h3>
+                                    </div>
+                                    {this.state.taskTiles.total_tasks === 1 && <p><strong>My Task</strong></p>}
+                                    {this.state.taskTiles.total_tasks !== 1 && <p><strong>My Tasks</strong></p>}
+                                </div>
+                                <div className="small-box-footer clearfix">
+                                    <div className="col-3 red-color">Overdue <span>{this.state.taskTiles.overdue_tasks}</span></div>
+                                    <div className="col-3 col-border">Due Today <span>{this.state.taskTiles.overdue_today}</span></div>
+                                    <div className="col-3 col-border"><div className="row">Due this Week <span>{this.state.taskTiles.overdue_week}</span></div></div>
+                                </div>
+                            </div>
+                        </div> } */}
+            </div>
+
+            {this.state.show_data && (
+              <div className="row">
+                <div className="col-lg-7 col-sm-7 col-xs-12">
+                  <div className="analytics-moudle">
+                    <div className="inner height-01 clearfix">
+                      <div className="inner-head">
+                        <h5>Number of Tasks</h5>
+                      </div>
+                      <div className="row">
+                        {/* <div className="col-md-4 col-sm-4 col-border">
+                                                <Doughnut data={this.state.open_tasks} options={{maintainAspectRatio:false}} />
+                                            </div>
+
+                                            <div className="col-md-4 col-sm-4 col-border">
+                                                <Doughnut data={this.state.assign_tasks} options={{maintainAspectRatio:false}} />
+                                            </div>
+
+                                            <div className="col-md-4 col-sm-4">
+                                                <Doughnut data={this.state.close_tasks} options={{maintainAspectRatio:false}} />
+                                            </div> */}
+
+                        <div className="col-md-4 col-sm-4 col-border">
+                          <div className="analytics-moudle-inner">
+                            <p className="chart-heading">Open Tasks</p>
+                            <div className="analytics-moudle-chart">
+                              <Chart
+                                //width={'100%'}
+                                //height={'200px'}
+                                chartType="PieChart"
+                                loader={<div>Loading Chart</div>}
+                                data={this.state.open_google}
+                                options={{
+                                  chartArea: { width: "100%" },
+                                  pieHole: 0.65,
+                                  sliceVisibilityThreshold: 0,
+                                  legend: { position: "none" },
+                                  colors: [
+                                    "#facf5a",
+                                    "#ff5959",
+                                    "#e8e8e8",
+                                    "#D691AF",
+                                  ],
+                                  pieSliceText: "none",
+                                }}
+                                rootProps={{ "data-testid": "3" }}
+                                chartEvents={[
+                                  {
+                                    eventName: "select",
+                                    callback({ chartWrapper }) {
+                                      let selected = chartWrapper
+                                        .getChart()
+                                        .getSelection();
+                                      let selectedGraph = 0;
+                                      if (selected != "") {
+                                        if (selected[0].row === 0) {
+                                          selectedGraph = 1;
+                                        } else if (selected[0].row === 1) {
+                                          selectedGraph = 2;
+                                        } else if (selected[0].row === 2) {
+                                          selectedGraph = 3;
+                                        } else if (selected[0].row === 3) {
+                                          selectedGraph = 17;
+                                        }
+
+                                        if (urlStr === "") {
+                                          urlStr = "q=no";
+                                        }
+
+                                        prevHist.push({
+                                          pathname: `/user/my_team_details/${selectedGraph}/1`,
+                                          state: {
+                                            urlStr: urlStr,
+                                            selectedTab: 1,
+                                          },
+                                        });
+
+                                        //window.open( `/user/my_team_details/${selectedGraph}/1/${urlStr}`, '_blank');
+
+                                        // let url     = `/user/my_team_details/${selectedGraph}/1`
+
+                                        // let form    = document.createElement('form');
+                                        // form.name   = 'graphSearch';
+                                        // form.method = 'POST';
+                                        // form.action = url;
+
+                                        // let input   = document.createElement('INPUT');
+                                        // input.type  = 'HIDDEN';
+                                        // input.name  = 'post_params';
+                                        // input.value = `${urlStr}`;
+                                        // form.appendChild(input);
+                                        // document.body.appendChild(form);
+                                        // form.submit();
+                                      }
+                                    },
+                                  },
+                                ]}
+                              />
+                              <div className="chart-count">
+                                {this.state.openTotalTasks}
+                                <span>Total</span>
+                              </div>
+                            </div>
+                            <ul className="chart-description">
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#facf5a" }}
+                                ></span>
+                                SLA Near Breach (>80%)
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#ff5959" }}
+                                ></span>
+                                SLA Breached
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#D691AF" }}
+                                ></span>
+                                SLA Breached With Reason
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#e8e8e8" }}
+                                ></span>
+                                Within SLA
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div className="col-md-4 col-sm-4 col-border">
+                          <div className="analytics-moudle-inner">
+                            <p className="chart-heading">Allocated Tasks</p>
+                            <div className="analytics-moudle-chart">
+                              <Chart
+                                //width={'100%'}
+                                //height={'200px'}
+                                chartType="PieChart"
+                                loader={<div>Loading Chart</div>}
+                                data={this.state.assign_google}
+                                options={{
+                                  chartArea: { width: "100%" },
+                                  pieHole: 0.65,
+                                  sliceVisibilityThreshold: 0,
+                                  legend: { position: "none" },
+                                  colors: [
+                                    "#facf5a",
+                                    "#ff5959",
+                                    "#e8e8e8",
+                                    "#D691AF",
+                                  ],
+                                  pieSliceText: "none",
+                                }}
+                                rootProps={{ "data-testid": "3" }}
+                                chartEvents={[
+                                  {
+                                    eventName: "select",
+                                    callback({ chartWrapper }) {
+                                      let selected = chartWrapper
+                                        .getChart()
+                                        .getSelection();
+                                      let selectedGraph = 0;
+                                      if (selected != "") {
+                                        if (selected[0].row === 0) {
+                                          selectedGraph = 4;
+                                        } else if (selected[0].row === 1) {
+                                          selectedGraph = 5;
+                                        } else if (selected[0].row === 2) {
+                                          selectedGraph = 6;
+                                        } else if (selected[0].row === 3) {
+                                          selectedGraph = 18;
+                                        }
+
+                                        if (urlStr === "") {
+                                          urlStr = "q=no";
+                                        }
+
+                                        prevHist.push({
+                                          pathname: `/user/my_team_details/${selectedGraph}/1`,
+                                          state: {
+                                            urlStr: urlStr,
+                                            selectedTab: 2,
+                                          },
+                                        });
+                                      }
+                                    },
+                                  },
+                                ]}
+                              />
+                              <div className="chart-count">
+                                {this.state.assignTotalTasks}
+                                <span>Total</span>
+                              </div>
+                            </div>
+                            <ul className="chart-description">
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#facf5a" }}
+                                ></span>
+                                SLA Near Breach (>80%)
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#ff5959" }}
+                                ></span>
+                                SLA Breached
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#D691AF" }}
+                                ></span>
+                                SLA Breached With Reason
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#e8e8e8" }}
+                                ></span>
+                                Within SLA
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div className="col-md-4 col-sm-4">
+                          <div className="analytics-moudle-inner">
+                            <p className="chart-heading">Closed Tasks</p>
+                            <div className="analytics-moudle-chart">
+                              <Chart
+                                //width={'100%'}
+                                //height={'200px'}
+                                chartType="PieChart"
+                                loader={<div>Loading Chart</div>}
+                                data={this.state.close_google}
+                                options={{
+                                  chartArea: { width: "100%" },
+                                  pieHole: 0.65,
+                                  sliceVisibilityThreshold: 0,
+                                  legend: { position: "none" },
+                                  colors: ["#15cda8", "#ff5959", "#D691AF"],
+                                  pieSliceText: "none",
+                                }}
+                                rootProps={{ "data-testid": "3" }}
+                                chartEvents={[
+                                  {
+                                    eventName: "select",
+                                    callback({ chartWrapper }) {
+                                      let selected = chartWrapper
+                                        .getChart()
+                                        .getSelection();
+                                      let selectedGraph = 0;
+
+                                      if (selected != "") {
+                                        if (selected[0].row === 0) {
+                                          selectedGraph = 7;
+                                        } else if (selected[0].row === 1) {
+                                          selectedGraph = 8;
+                                        } else if (selected[0].row === 2) {
+                                          selectedGraph = 19;
+                                        }
+
+                                        if (urlStr === "") {
+                                          urlStr = "q=no";
+                                        }
+
+                                        prevHist.push({
+                                          pathname: `/user/my_team_details/${selectedGraph}/1`,
+                                          state: {
+                                            urlStr: urlStr,
+                                            selectedTab: 3,
+                                          },
+                                        });
+
+                                        //window.open( `/user/my_team_details/${selectedGraph}/1/${urlStr}`, '_blank');
+                                      }
+                                    },
+                                  },
+                                ]}
+                              />
+                              <div className="chart-count">
+                                {this.state.closeTotalTasks}
+                                <span>Total</span>
+                              </div>
+                            </div>
+                            <ul className="chart-description">
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#15cda8" }}
+                                ></span>
+                                SLA Met
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#ff5959" }}
+                                ></span>
+                                SLA Breached
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#D691AF" }}
+                                ></span>
+                                SLA Breached With Reason
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-lg-5 col-sm-5 col-xs-12">
+                  <div className="analytics-moudle">
+                    <div className="inner height-01 clearfix">
+                      <div className="inner-head">
+                        <h5>Breakdown- Open &amp; Closed Tasks</h5>
+                      </div>
+
+                      <div className="row col-border">
+                        <div className="col-md-6 col-sm-6 col-border">
+                          <div className="analytics-moudle-inner">
+                            <p className="chart-heading">
+                              Task Overdue Analysis
+                            </p>
+                            <div className="analytics-moudle-chart">
+                              {/* <Doughnut data={this.state.overdue} options={{maintainAspectRatio:false}} /> */}
+                              <Chart
+                                //width={'100%'}
+                                height={"200px"}
+                                chartType="PieChart"
+                                loader={<div>Loading Chart</div>}
+                                data={this.state.overdue_google}
+                                options={{
+                                  chartArea: { width: "100%" },
+                                  pieHole: 0.65,
+                                  sliceVisibilityThreshold: 0,
+                                  legend: { position: "none" },
+                                  colors: ["#CC4747", "#E65050", "#802d2d"],
+                                  pieSliceText: "none",
+                                }}
+                                rootProps={{ "data-testid": "3" }}
+                                chartEvents={[
+                                  {
+                                    eventName: "select",
+                                    callback({ chartWrapper }) {
+                                      let selected = chartWrapper
+                                        .getChart()
+                                        .getSelection();
+                                      let selectedGraph = 0;
+                                      if (selected != "") {
+                                        if (selected[0].row === 0) {
+                                          selectedGraph = 9;
+                                        } else if (selected[0].row === 1) {
+                                          selectedGraph = 10;
+                                        } else if (selected[0].row === 2) {
+                                          selectedGraph = 11;
+                                        }
+
+                                        if (urlStr === "") {
+                                          urlStr = "q=no";
+                                        }
+
+                                        prevHist.push({
+                                          pathname: `/user/my_team_details/${selectedGraph}/1`,
+                                          state: { urlStr: urlStr },
+                                        });
+
+                                        //window.open( `/user/my_team_details/${selectedGraph}/1/${urlStr}`, '_blank');
+                                      }
+                                    },
+                                  },
+                                ]}
+                              />
+                              <div className="chart-count">
+                                {this.state.overdueTotalTasks}
+                                <span>Total</span>
+                              </div>
+                            </div>
+
+                            <ul className="chart-description">
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#cc4747" }}
+                                ></span>
+                                Delayed By Days (1-4)
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#e65050" }}
+                                ></span>
+                                Delayed By Week (>4 days)
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#802d2d" }}
+                                ></span>
+                                Delayed By Month (>22 days)
+                              </li>
+                            </ul>
+
+                            <div className="task-right-top">
+                              <LinkWithTooltip
+                                tooltip={`Displaying breakdown of all overdue (open,allocated & closed) tasks.`}
+                                href="#"
+                                id="tooltip-1"
+                                clicked={(e) => this.checkHandler(e)}
+                              >
+                                <img src={totalTaskImage} alt="exclamation" />
+                              </LinkWithTooltip>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="col-md-6 col-sm-6">
+                          <div className="analytics-moudle-inner">
+                            <p className="chart-heading">SLA Met Analysis</p>
+                            {/* <Doughnut data={this.state.met} options={{maintainAspectRatio:false}} /> */}
+                            <div className="analytics-moudle-chart">
+                              <Chart
+                                //width={'100%'}
+                                //height={'200px'}
+                                chartType="PieChart"
+                                loader={<div>Loading Chart</div>}
+                                data={this.state.met_google}
+                                options={{
+                                  chartArea: { width: "100%" },
+                                  pieHole: 0.65,
+                                  tooltip: { trigger: "hover" },
+
+                                  sliceVisibilityThreshold: 0,
+                                  legend: { position: "none" },
+                                  colors: ["#12B392", "#0E9673", "#084D3F"],
+                                  pieSliceText: "none",
+                                }}
+                                rootProps={{ "data-testid": "3" }}
+                                chartEvents={[
+                                  {
+                                    eventName: "select",
+                                    callback({ chartWrapper }) {
+                                      let selected = chartWrapper
+                                        .getChart()
+                                        .getSelection();
+                                      let selectedGraph = 0;
+                                      if (selected != "") {
+                                        if (selected[0].row === 0) {
+                                          selectedGraph = 12;
+                                        } else if (selected[0].row === 1) {
+                                          selectedGraph = 13;
+                                        } else if (selected[0].row === 2) {
+                                          selectedGraph = 14;
+                                        }
+
+                                        if (urlStr === "") {
+                                          urlStr = "q=no";
+                                        }
+
+                                        prevHist.push({
+                                          pathname: `/user/my_team_details/${selectedGraph}/1`,
+                                          state: {
+                                            urlStr: urlStr,
+                                            selectedTab: 3,
+                                          },
+                                        });
+
+                                        //window.open( `/user/my_team_details/${selectedGraph}/1/${urlStr}`, '_blank');
+                                      }
+                                    },
+                                  },
+                                ]}
+                              />
+                              <div className="chart-count">
+                                {this.state.metTotalTasks}
+                                <span>Total</span>
+                              </div>
+                            </div>
+
+                            <ul className="chart-description">
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#12B392" }}
+                                ></span>
+                                Before 1 day
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#0E9673" }}
+                                ></span>
+                                Before 2-3 days
+                              </li>
+                              <li>
+                                <span
+                                  style={{ backgroundColor: "#084d3f" }}
+                                ></span>
+                                Before 4 days
+                              </li>
+                            </ul>
+
+                            <div className="task-right-top">
+                              <LinkWithTooltip
+                                tooltip={`Displaying breakdown of all tasks which were closed within SLA.`}
+                                href="#"
+                                id="tooltip-1"
+                                clicked={(e) => this.checkHandler(e)}
+                              >
+                                <img src={totalTaskImage} alt="exclamation" />
+                              </LinkWithTooltip>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-lg-9 col-sm-9 col-xs-12">
+                  <div className="analytics-moudle bg-Green">
+                    <div className="inner height-02 clearfix">
+                      <div className="inner-head">
+                        <h5>Employee Wise Task Distribution</h5>
+                      </div>
+
+                      <div className="bar-canvus-area">
+                        <div className="canvus-side-head">
+                          <p>No. Of Tasks</p>
+                        </div>
+                        <div className="canvus-area">
+                          {/* <Bar data={this.state.emp_task_dist} options={{maintainAspectRatio:false}} /> */}
+                          <Chart
+                            width={"100%"}
+                            height={"300px"}
+                            chartType="Bar"
+                            loader={<div>Loading Chart</div>}
+                            data={this.state.emp_task_distribution_google}
+                            options={{
+                              colors: ["#fad264", "#15cda8", "#ff5959"],
+                              legend: { position: "none" },
+                            }}
+                            className={"reddyTaskDistribution"}
+                            // For tests
+                            rootProps={{ "data-testid": "2" }}
+                            chartEvents={[
+                              {
+                                eventName: "select",
+                                callback({ chartWrapper }) {
+                                  let selected = chartWrapper
+                                    .getChart()
+                                    .getSelection();
+                                  let selectedGraph = 0;
+                                  let barGraph = "";
+                                  if (selected != "") {
+                                    selectedGraph = 15;
+
+                                    barGraph = `${selected[0].row},${selected[0].column}`;
+                                    if (urlStr === "") {
+                                      urlStr = "q=no";
+                                    }
+
+                                    let selTab = selected[0].column;
+                                    //window.open( `/user/my_team_details/${selectedGraph}/${barGraph}/${urlStr}`, '_blank');
+
+                                    prevHist.push({
+                                      pathname: `/user/my_team_details/${selectedGraph}/${barGraph}`,
+                                      state: {
+                                        urlStr: urlStr,
+                                        selectedTab: selTab,
+                                      },
+                                    });
+                                  }
+                                },
+                              },
+                            ]}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bar-description-area">
+                        <ul className="bar-description">
+                          <li>
+                            <span style={{ backgroundColor: "#fad264" }}></span>
+                            Open
+                          </li>
+                          <li>
+                            <span style={{ backgroundColor: "#15cda8" }}></span>
+                            Allocated
+                          </li>
+                          <li>
+                            <span style={{ backgroundColor: "#ff5959" }}></span>
+                            Closed
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-lg-3 col-sm-3 col-xs-12">
+                  <div className="potential-box">
+                    <div className="inner">
+                      <div className="inner-head">
+                        <h5>Potential Reminders for 24 hours</h5>
+                      </div>
+                      <div className="row">
+                        <div className="col-md-6 col-sm-6 col-xs-6 col-border">
+                          <div className="potential-inner">
+                            <div className="icon-panel">
+                              <div className="icon task-icon">
+                                <img src={potentialAlertImage} alt="Alert" />
+                              </div>
+                              <h3>{this.state.inactive24Hours}</h3>
+                            </div>
+                            <p>Task Not Actioned Within Last 24 Hours</p>
+                            <div className="task-right-top">
+                              <LinkWithTooltip
+                                tooltip={`Tasks unattended from the time of request received from customer (Frontend SLA).`}
+                                href="#"
+                                id="tooltip-1"
+                                clicked={(e) => this.checkHandler(e)}
+                              >
+                                <img src={totalTaskImage} alt="exclamation" />
+                              </LinkWithTooltip>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="col-md-6 col-sm-6 col-xs-6">
+                          <div className="potential-inner">
+                            <div className="icon-panel">
+                              <div className="icon task-icon">
+                                <img
+                                  src={potentialNotificationImage}
+                                  alt="Notification"
+                                />
+                              </div>
+                              <h3>{this.state.breach24Hours}</h3>
+                            </div>
+                            <p>Task About To Breach In Next 24 Hours</p>
+                            <div className="task-right-top">
+                              <LinkWithTooltip
+                                tooltip={`Tasks going to breach in 24hrs.`}
+                                href="#"
+                                id="tooltip-1"
+                                clicked={(e) => this.checkHandler(e)}
+                              >
+                                <img src={totalTaskImage} alt="exclamation" />
+                              </LinkWithTooltip>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-lg-12 col-sm-12 col-xs-12">
+                  <div className="analytics-moudle bg-Green">
+                    <div className="inner height-02 clearfix">
+                      <div className="inner-head">
+                        <h5>Distribution of Request Types</h5>
+                        {/* Total:{" "}
+                        <strong>{this.state.distribution_total} </strong>
+                        (Open: <strong>
+                          {this.state.distribution_open}
+                        </strong>{" "}
+                        /Closed:{" "}
+                        <strong>{this.state.distribution_close}</strong>)
+                        Breached:{" "}
+                        <strong>{this.state.distribution_breach}</strong>{" "} */}
+                      </div>
+                      <div className="bar-canvus-area">
+                        <div className="canvus-side-head">
+                          <p>No. Of Requests</p>
+                        </div>
+                        <div className="canvus-area">
+                          {/* <Bar data={this.state.task_req_dist_data} options={{maintainAspectRatio:false}} /> */}
+                          <Chart
+                            width={"100%"}
+                            height={"300px"}
+                            chartType="Bar"
+                            loader={<div>Loading Chart</div>}
+                            data={this.state.req_task_distribution_google}
+                            options={{
+                              colors: ["#fad264", "#15cda8", "#ff5959"],
+                              legend: { position: "none" },
+                            }}
+                            // For tests
+                            rootProps={{ "data-testid": "2" }}
+                            chartEvents={[
+                              {
+                                eventName: "select",
+                                callback({ chartWrapper }) {
+                                  let selected = chartWrapper
+                                    .getChart()
+                                    .getSelection();
+                                  let selectedGraph = 0;
+                                  let barGraph = 0;
+                                  console.log(selected);
+                                  if (selected != "") {
+                                    selectedGraph = 16;
+                                    barGraph = `${selected[0].row},${selected[0].column}`;
+
+                                    if (urlStr === "") {
+                                      urlStr = "q=no";
+                                    }
+
+                                    let selTab = 1;
+
+                                    if (selected[0].column == 2) {
+                                      selTab = 3;
+                                    }
+
+                                    //window.open( `/user/my_team_details/${selectedGraph}/${barGraph}/${urlStr}`, '_blank');
+
+                                    prevHist.push({
+                                      pathname: `/user/my_team_details/${selectedGraph}/${barGraph}`,
+                                      state: {
+                                        urlStr: urlStr,
+                                        selectedTab: selTab,
+                                      },
+                                    });
+                                  }
+                                },
+                              },
+                            ]}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bar-description-area">
+                        <ul className="bar-description">
+                          <li>
+                            <span style={{ backgroundColor: "#facf5a" }}></span>
+                            Open
+                          </li>
+                          <li>
+                            <span style={{ backgroundColor: "#15cda8" }}></span>
+                            Closed
+                          </li>
+                          <li>
+                            <span style={{ backgroundColor: "#ff5959" }}></span>
+                            Breached
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {this.state.showCompanyPopup === true && (
+              <MyCompanyPopup closePopup={this.closePopup} {...this.props} />
+            )}
+          </div>
+        </>
+      );
+    }
+  }
+}
+
+export default AnalyticsModule;

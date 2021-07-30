@@ -1,0 +1,2 @@
+NODE_ENV=development
+REACT_APP_API_URL=http://3.7.163.198:8888/

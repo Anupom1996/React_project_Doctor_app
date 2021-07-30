@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="156" height="44" viewBox="0 0 156 44">
+  <g id="Group_32" data-name="Group 32" transform="translate(-35 -23)">
+    <text id="sConnect" transform="translate(35 58)" fill="#fff" font-size="31" font-family="OpenSans-Regular, Open Sans"><tspan x="0" y="0">s</tspan><tspan y="0" font-size="30" font-family="OpenSans-Bold, Open Sans" font-weight="700">Connect</tspan></text>
+    <g id="Ellipse_7" data-name="Ellipse 7" transform="translate(168 25)" fill="none" stroke="#fad20a" stroke-width="2">
+      <circle cx="5.5" cy="5.5" r="5.5" stroke="none"/>
+      <circle cx="5.5" cy="5.5" r="4.5" fill="none"/>
+    </g>
+    <g id="Ellipse_8" data-name="Ellipse 8" transform="translate(179 36)" fill="none" stroke="#32c8f5" stroke-width="1">
+      <circle cx="4" cy="4" r="4" stroke="none"/>
+      <circle cx="4" cy="4" r="3.5" fill="none"/>
+    </g>
+    <g id="Ellipse_9" data-name="Ellipse 9" transform="translate(183 23)" fill="none" stroke="#5f4ba0" stroke-width="1">
+      <circle cx="4" cy="4" r="4" stroke="none"/>
+      <circle cx="4" cy="4" r="3.5" fill="none"/>
+    </g>
+  </g>
+</svg>
